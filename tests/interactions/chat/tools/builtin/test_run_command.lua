@@ -112,7 +112,7 @@ end
 
 T["Windows"] = new_set()
 
-T["Windows"]["run_command handles Windows pipe command with empty string argument"] = function()
+T["Windows"]["run_command handles PowerShell pipe command with empty string argument"] = function()
   -- Skip on non-Windows systems
   if vim.fn.has("win32") == 0 then
     MiniTest.skip("Skipping Windows specific test")
@@ -146,17 +146,11 @@ T["Windows"]["run_command handles Windows pipe command with empty string argumen
     local chat, tools = h.setup_chat_buffer(cfg)
     _G.chat, _G.tools, _G.command_results = chat, tools, command_results
 
-    -- Simulate LLM calling run_command with pipe and find command that has empty string argument
     local calls = {
       {
         ["function"] = {
           name = "run_command",
-          -- Use full path to find.exe, since I know developers
-          -- who have added a POSIX find.exe earlier in their PATH
-          -- Using find.exe to explicitly pass in an empty argument
-          -- which needs to make it AS an empty argument and not
-          -- overly escaped or overly quoted strings
-          arguments = '{"cmd": "echo hello there | %windir%\\\\System32\\\\find.exe /c /v \\"\\"", "flag": null}'
+          arguments = '{"cmd": "Write-Output hello | ForEach-Object { if (\\"\\" -eq [string]::Empty) { 1 } }", "flag": null}'
         }
       },
     }

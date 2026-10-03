@@ -36,7 +36,7 @@ return cmd_tool({
     setup = function(self, meta)
       local args = self.args
 
-      local cmd = { cmd = vim.split(args.cmd, " ") }
+      local cmd = { cmd = args.cmd }
       if args.flag then
         cmd.flag = args.flag
       end

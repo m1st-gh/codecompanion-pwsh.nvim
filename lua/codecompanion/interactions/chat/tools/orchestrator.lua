@@ -34,11 +34,18 @@ end
 ---@return vim.SystemObj
 local function execute_shell_command(opts, callback)
   if vim.fn.has("win32") == 1 then
-    -- See PR #2186
-    local shell_cmd = table.concat(opts.cmd, " ") .. "\r\nEXIT %ERRORLEVEL%\r\n"
-    return vim.system({ "cmd.exe", "/Q", "/K" }, {
+    local shell_cmd = opts.cmd
+    if type(shell_cmd) == "table" then
+      local escaped_args = vim.tbl_map(function(arg)
+        return "'" .. arg:gsub("'", "''") .. "'"
+      end, shell_cmd)
+      shell_cmd = "& " .. table.concat(escaped_args, " ")
+    end
+    shell_cmd = shell_cmd
+      .. "\r\nif ($?) { exit 0 } else { if ($LASTEXITCODE) { exit $LASTEXITCODE } else { exit 1 } }\r\n"
+
+    return vim.system({ "pwsh.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "-" }, {
       stdin = shell_cmd,
-      env = { PROMPT = "\r\n" },
       timeout = opts.timeout,
     }, callback)
   end
@@ -62,9 +69,6 @@ local function cmd_to_func_tool(tool, orchestrator)
 
       local flag = cmd.flag
       cmd = cmd.cmd or cmd
-      if type(cmd) == "string" then
-        cmd = vim.split(cmd, " ", { trimempty = true })
-      end
 
       ---@param tools CodeCompanion.Tools
       return function(tools, _, opts)
